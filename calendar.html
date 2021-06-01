@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Calendar</title>
+        <style>
+            body {
+                overflow: hidden;
+                background: url(media/bg.jpg) no-repeat top center / cover;
+                width: 100vw;
+                height: 100vh;
+            }
+            .date {
+                position: absolute;
+                width: 110%;
+                left: 50%;
+                top: 50%;
+                transform: translateX(-50%);
+                display: flex;
+            }
+            .date.moving {
+                transition: all 1s;
+                left: calc(50% - (110% / 7));
+            }
+            .date > span {
+                flex: 1 0 calc(100% / 7);
+                text-align: center;
+                transition: all 0.3s;
+            }
+            .date > span.weekend {
+                filter: brightness(0.5);
+            }
+            .date > span > img:last-of-type {
+                margin-left: -5px;
+            }
+            .date > .prev:nth-of-type(1) {
+                transform: skew(0.02turn);
+            }
+            .date > .prev:nth-of-type(2) {
+                transform: skew(0.02turn);
+            }
+            .date > .prev:nth-of-type(3) {
+                transform: skew(0.02turn);
+            }
+            .date > .current {
+                transform: scale(1.5);
+            }
+            .date > .next:nth-of-type(5) {
+                transform: skew(-0.02turn);
+            }
+            .date > .next:nth-of-type(6) {
+                transform: skew(-0.02turn);
+            }
+            .date > .next:nth-of-type(7) {
+                transform: skew(-0.02turn);
+            }
+            .dagger {
+                position: absolute;
+                top: 50%;
+                margin-top: -135px;
+                left: 50%;
+                margin-left: -35px;
+                transform: translateX(0) rotate(-45deg);
+                width: 201px;
+                height: 100px;
+            }
+            .dagger.hidden {
+                margin-top: -60%;
+                margin-left: 600px;
+            }
+            .dagger.moving {
+                transition: all 0.6s cubic-bezier(0.75, -0.5, 0.3, 1.1);
+                margin-top: -135px;
+                margin-left: -35px;
+            }
+        </style>
+    </head>
+    <body>
+        <button onclick="moveDate()">Next day</button>
+        <h4 class="month"></h4>
+        <div class="date">
+            <span class="current"></span>
+        </div>
+        <img class="dagger hidden" src="media/dagger.png" alt="Dagger" />
+        <div class="time"></div>
+
+        <script src="https://momentjs.com/downloads/moment.min.js"></script>
+        <script>
+            const dateToPNG = (date) => {
+                const dateArray = date.format(dateFormat).toString().split("");
+                let response = "";
+                for (let i in dateArray) {
+                    response +=
+                        '<img src="media/days/' + dateArray[i] + '.png">';
+                }
+                return response;
+            };
+
+            const defaultTimeout = 86400000; // 1 Day
+            let date = moment();
+            console.log(date);
+            let dateEl = document.querySelector(".date");
+            let currentEl = document.querySelector(".date .current");
+            let timeEl = document.querySelector(".time");
+            let monthEl = document.querySelector(".month");
+            let pastDate, futureDate;
+            let dateFormat = "D";
+            let timeout =
+                defaultTimeout -
+                (date.hours() * 60 * 60 +
+                    date.minutes() * 60 +
+                    date.seconds()) *
+                    1000;
+
+            currentEl.innerHTML = dateToPNG(date);
+            monthEl.innerHTML = date.format("MMMM");
+            currentEl.setAttribute("date", date.format(dateFormat));
+            currentEl.setAttribute("title", date.format("dddd"));
+            timeEl.innerHTML = date.format("HH:mm:ss");
+            for (let i = 1; i <= 3; i++) {
+                // Create past dates
+                pastDate = moment(date).subtract(i, "days");
+                const pastDateEl = document.createElement("SPAN");
+                pastDateEl.setAttribute("title", pastDate.format("dddd"));
+                pastDateEl.classList.add("prev");
+                if ([6, 7].includes(pastDate.isoWeekday())) {
+                    pastDateEl.classList.add("weekend");
+                }
+                pastDateEl.innerHTML = dateToPNG(pastDate);
+                pastDateEl.setAttribute("date", pastDate.format(dateFormat));
+                dateEl.prepend(pastDateEl);
+                // Create future dates
+                futureDate = moment(date).add(i, "days");
+                const futureDateEl = document.createElement("SPAN");
+                futureDateEl.setAttribute("title", futureDate.format("dddd"));
+                futureDateEl.classList.add("next");
+                if ([6, 7].includes(futureDate.isoWeekday())) {
+                    futureDateEl.classList.add("weekend");
+                }
+                futureDateEl.innerHTML = dateToPNG(futureDate);
+                futureDateEl.setAttribute(
+                    "date",
+                    futureDate.format(dateFormat)
+                );
+                dateEl.append(futureDateEl);
+            }
+
+            const dagger = document.querySelector(".dagger");
+            const daggerAnimation = () => {
+                dagger.classList.add("moving");
+                dagger.classList.remove("hidden");
+                if (currentEl.getAttribute("date").length >= 2) {
+                    dagger.style.marginLeft = `${20}px`;
+                    dagger.style.marginTop = `${-125}px`;
+                }
+                setTimeout(() => {
+                    dagger.classList.remove("moving");
+                }, 600);
+            };
+            const daggerHiding = () => {
+                dagger.style.marginLeft = null;
+                dagger.style.marginTop = null;
+                dagger.classList.add("hidden");
+                dagger.classList.remove("moving");
+                setTimeout(() => {
+                    daggerAnimation();
+                }, 1000);
+            };
+            daggerAnimation();
+
+            console.log(timeout);
+            const setTime = () => {
+                console.log(timeout);
+                timeout = defaultTimeout;
+                date = moment();
+                timeEl.innerHTML = date.format("HH:mm:ss");
+                moveDate();
+                setTimeout(setTime, timeout);
+            };
+            setTimeout(setTime, timeout);
+
+            const moveDate = () => {
+                // TO REMOVE AFTER TESTING
+                date.add(1, "day");
+                console.log(date);
+                monthEl.innerHTML = date.format("MMMM");
+                // TO REMOVE AFTER TESTING
+                daggerHiding();
+                const futureDateEl = document.createElement("SPAN");
+                futureDateEl.classList.add("next");
+                futureDateEl.innerHTML = dateToPNG(futureDate.add(1, "days"));
+                futureDateEl.setAttribute("title", futureDate.format("dddd"));
+                if ([6, 7].includes(futureDate.isoWeekday())) {
+                    futureDateEl.classList.add("weekend");
+                }
+                futureDateEl.setAttribute(
+                    "date",
+                    futureDate.format(dateFormat)
+                );
+                dateEl.append(futureDateEl);
+
+                currentEl.classList.remove("current");
+                currentEl.classList.add("prev");
+
+                currentEl = document.querySelector(".next");
+                currentEl.classList.add("current");
+                currentEl.classList.remove("next");
+
+                dateEl.classList.add("moving");
+                setTimeout(() => {
+                    document.querySelector(".prev").remove();
+                    dateEl.classList.remove("moving");
+                }, 1000);
+            };
+        </script>
+    </body>
+</html>
